@@ -3,5 +3,6 @@ export class AppUser {
   email!: string;
   password!: string;
   idToken: string = '';
+  uId: string = '';
   isLoggedIn: boolean = false;
 }

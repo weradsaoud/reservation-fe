@@ -9,6 +9,10 @@ import {
 import { AppUser } from "../models/appUser";
 import axios from "axios";
 import { addUserUrl, baseUrl, getUserUrl } from "../config";
+import {
+  subscribeToPusher,
+  unSubscribeFromChannel,
+} from "../pusher/pusherConfig";
 
 const appUser: AppUser = new AppUser();
 
@@ -21,6 +25,7 @@ export const logIn = async (email: string, password: string) => {
     //TODO retrieve AppUser data from backend and construct the loggedin user.
     appUser.idToken = await getIdToken();
     appUser.email = userCredential.user.email as string;
+    appUser.uId = userCredential.user.uid;
     appUser.isLoggedIn = true;
     let res = await axios.get(baseUrl + getUserUrl, {
       headers: {
@@ -29,6 +34,7 @@ export const logIn = async (email: string, password: string) => {
     });
     appUser.name = res.data.name;
     localStorage.setItem("appUser", JSON.stringify(appUser));
+    subscribeToPusher(userCredential.user.uid);
   }
 };
 
@@ -44,8 +50,10 @@ export const signUp = async (email: string, password: string, name: string) => {
       appUser.idToken = await getIdToken();
       appUser.email = userCredential.user.email as string;
       appUser.name = name;
+      appUser.uId = userCredential.user.uid;
       appUser.isLoggedIn = true;
       localStorage.setItem("appUser", JSON.stringify(appUser));
+      subscribeToPusher(userCredential.user.uid);
       await axios.post(baseUrl + addUserUrl, appUser);
     } catch (error) {
       console.error(error);
@@ -58,6 +66,8 @@ export const resetPassword = async (email: string) => {
 };
 
 export const logOut = async () => {
+  let user = getAppUser();
+  if (user) unSubscribeFromChannel(user.uId);
   localStorage.removeItem("appUser");
   await logout();
 };
